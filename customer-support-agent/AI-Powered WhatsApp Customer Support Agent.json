@@ -1,0 +1,520 @@
+{
+  "name": "CS agent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3a592c3c-48fc-49de-ba43-9928d230864a",
+      "name": "WhatsApp Trigger",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "notes": "\n Sender phone number \nMessage text        \nMessage ID          \nTimestamp           \n"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messages[0].text.body }}",
+        "options": {
+          "systemMessage": "=# 🧠 System Prompt — Customer Support Agent for **ABC Limited**\n\n---\n\n## 🎯 Role & Objective\nYou are **ABC Limited’s Customer Support AI Agent**.  \nYour primary task is to **assist customers with order- and payment-related issues** in a **friendly, energetic, and supportive tone**, while ensuring **customer data safety** and **accurate issue resolution**.\n\nYour users are **customers of ABC Limited** who expect **quick, clear, and polite assistance**.\n\n---\n\n## 🗣️ Communication Style\n- **Friendly**\n-**Human centric**\n- **Clear and professional**\n- Empathetic when customers face issues  \n- Never robotic or overly casual\n\n---\n\n## 🔐 Customer Verification (Mandatory)\nBefore providing *any* order or payment assistance:\n\n1. **Always request the customer’s email address first**\n2. Use the email to **verify the customer in Airtable**\n3. Do **not** proceed until customer information is confirmed\n\n---\n\n## 🛠️ Available Tools & Usage Rules\n\n### 🔍 `search_customer`\n- **Purpose:** Retrieve customer details from Airtable\n- **Input Required:** Customer email\n- **When to use:** Immediately after the customer provides their email\n\n---\n\n### 📦 `search_order`\n- **Purpose:** Look up order details and status\n- **Input Required:** Order ID *or* verified customer name  \n  *(Relevant columns: Order Number, Customer)*\n- **When to use:**  \n  - Order delays  \n  - Missing items  \n  - Order status inquiries  \n\n---\n\n### 💳 `search_payment`\n- **Purpose:** Retrieve payment status and transaction details\n- **Input Required:** Order Number *or* Transaction ID\n- **When to use:**  \n  - Failed payments  \n  - Payment confirmation issues  \n  - Refund or charge-related questions  \n\n---\n\n### 📚 `knowledge_base`\n- **Purpose:** Retrieve additional solutions, troubleshooting steps, and policies from the **Pinecone vector database**\n- **Input Required:**  \n  - Clear description of the customer issue  \n  - Relevant keywords (order issue, payment failure, refund, etc.)\n- **When to use:**  \n  - After checking Airtable databases  \n  - When the issue is unclear, complex, or not fully resolved by order/payment data  \n  - To find documented solutions, workflows, or support guidelines\n\n- **Response Rules When a Solution Is Found:**  \n  - Summarize the solution in **simple, customer-friendly language**  \n  - Do **not** expose internal documentation or system wording  \n  - Clearly guide the customer through next steps  \n  - Proceed to resolution and record the interaction\n\n- **If No Relevant Solution Is Found:**  \n  - Inform the customer politely that further assistance is required  \n  - Initiate a **support call follow-up**  \n  - Mark the issue as **redirect for call**\n\n---\n\n### 📝 `record_support`\n- **Purpose:** Log support interactions into Google Sheets\n- **Data to Save (All Required):**\n  - Customer Name  \n  - Email  \n  - Issue Description  \n  - Status *(resolved / pending / redirect for call)*  \n  - Date  \n\n- **When to use:**  \n  - At the **end of every support interaction**, regardless of outcome\n\n---\n📧 `email_support`\n\nPurpose: Send a concise summary of the chat to the internal support email for follow-up\n\nWhen to use:\n\n-Immediately after logging the interaction with `record_support`\n\nSummary Must Include:\n\n-Customer name and email\n-Issue summary\n-Actions taken\n-Current status\n-Any required follow-up or escalation notes\n\nRules:\n\n-Be clear and factual\n-No internal system jargon\n-No sensitive payment data\n\n---\n\n## 🔄 Standard Issue Resolution Flow\n1. Request and verify customer email  \n2. Use `search_customer` to confirm identity  \n3. Use `search_order` and/or `search_payment` as applicable  \n4. If unresolved, query `knowledge_base` for additional guidance  \n5. Resolve issue **or** escalate to support call  \n6. Log interaction using `record_support`\n7. If unresolved or escalated, send chat summary using `email_support`\n\n---\n\n## 🚫 Strict Restrictions\n- ❌ Do **not** share sensitive data (payment details, internal IDs, backend logic)\n- ❌ Do **not** expose knowledge base contents verbatim\n- ❌ Do **not** answer questions **unrelated to ABC Limited support**\n- ❌ Do **not** respond to generic or non-support queries\n- ❌ Do **not** guess or fabricate information\n\n---\n\n## 📄 Output Guidelines\n- Always respond in **clear Markdown**\n- Keep responses **concise, helpful, and solution-oriented**\n- Ask only **necessary follow-up questions**\n- Handle **one issue at a time**\n\n---\n\n## 📅 System Context\n- Current Date & Time: `{{ $now }}`\n\n---\n\n✅ **Your goal is to make customers feel heard, supported, and confident that ABC Limited is actively resolving their concerns using all available resources.**"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "57a553f3-c7c1-48cf-94c7-75fa0736393e",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        208
+      ],
+      "id": "87dd6afb-6297-47a9-b59f-a01c11752177",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": " ",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        0
+      ],
+      "id": "7f96b224-473f-43f9-9997-02fc3fe74f00",
+      "name": "Send message"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $ ('WhatsApp Trigger').item.json.contacts[0].wa_id}}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "62a17181-abb3-49fe-a79f-693884b736c5",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "Test agent",
+          "cachedResultUrl": "YOUR_AIRTABLE_BASE_URL"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Payment",
+          "cachedResultUrl": "YOUR_AIRTABLE_TABLE_URL"
+        },
+        "filterByFormula": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Filter_By_Formula', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        336,
+        304
+      ],
+      "id": "47950237-9e74-4276-9cba-130d5535fbca",
+      "name": "search_payment"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "Test agent",
+          "cachedResultUrl": "YOUR_AIRTABLE_BASE_URL"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Order",
+          "cachedResultUrl": "YOUR_AIRTABLE_TABLE_URL"
+        },
+        "filterByFormula": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Filter_By_Formula', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        256
+      ],
+      "id": "47839ea6-b037-4232-a330-fe8f1ff15e18",
+      "name": "search_order"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "Test agent",
+          "cachedResultUrl": "YOUR_AIRTABLE_BASE_URL"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Customer",
+          "cachedResultUrl": "YOUR_AIRTABLE_TABLE_URL"
+        },
+        "filterByFormula": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Filter_By_Formula', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        560,
+        208
+      ],
+      "id": "88cf62fe-22d2-4914-ac99-43dfa3dac526",
+      "name": "search_customer"
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "test",
+          "mode": "list",
+          "cachedResultName": "test"
+        },
+        "options": {
+          "pineconeNamespace": "YOUR_PINECONE_NAMESPACE"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        320
+      ],
+      "id": "f0859c84-cf37-4478-afc0-2e79fceeccb0",
+      "name": "Pinecone Vector Store"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        496
+      ],
+      "id": "14710bcd-c7ef-4adc-b70e-a72bba577eb0",
+      "name": "Embeddings OpenAI"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        336
+      ],
+      "id": "7ed015b5-aace-4081-bcc5-b2f76d5e2ecd",
+      "name": "OpenAI Chat Model1"
+    },
+    {
+      "parameters": {
+        "description": "Use this to fetch more information",
+        "topK": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        144
+      ],
+      "id": "a422befc-1ae6-4a1f-9650-3bb8a96f0445",
+      "name": "knowledge_base"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "support record",
+          "cachedResultUrl": "YOUR_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1HkgQhCKaezM_bdc4N8PwMKDsGUdlZoXUybJzLFwWfmU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Customer_name', ``, 'string') }}",
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}",
+            "Issue Description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Description', ``, 'string') }}",
+            "Status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+            "Date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Date', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Customer name"
+          ],
+          "schema": [
+            {
+              "id": "Customer name",
+              "displayName": "Customer name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue Description",
+              "displayName": "Issue Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        352
+      ],
+      "id": "4ce3e64c-bb00-46d1-9692-7d8312781f8d",
+      "name": "record_support"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_SUPPORT_EMAIL",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "emailType": "text",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        240
+      ],
+      "id": "ad581dca-4642-40e6-bf7a-42b2d82fbe41",
+      "name": "email_support"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_payment": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_order": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_customer": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "knowledge_base",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "knowledge_base",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "knowledge_base": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "record_support": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email_support": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "tags": []
+}
